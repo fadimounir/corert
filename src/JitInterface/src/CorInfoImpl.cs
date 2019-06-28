@@ -152,6 +152,11 @@ namespace Internal.JitInterface
                 CORINFO_METHOD_INFO methodInfo;
                 methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
 
+                if (MethodBeingCompiled.IsAbstract)
+                {
+                    return;
+                }
+
                 // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
                 if (methodIL == null)
                 {
@@ -1269,6 +1274,15 @@ namespace Internal.JitInterface
             if (type.IsArray || type.IsString)
                 result |= CorInfoFlag.CORINFO_FLG_VAROBJSIZE;
 
+            // HACK - USG
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            {
+                return (uint)(
+                    CorInfoFlag.CORINFO_FLG_SHAREDINST | 
+                    CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR | 
+                    CorInfoFlag.CORINFO_FLG_VALUECLASS);
+            }
+
             if (type.IsValueType)
             {
                 result |= CorInfoFlag.CORINFO_FLG_VALUECLASS;
@@ -1349,6 +1363,11 @@ namespace Internal.JitInterface
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
+            
+            //HACK
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                return (uint)IntPtr.Size;
+
             LayoutInt classSize = type.GetElementSize();
 #if READYTORUN
             if (classSize.IsIndeterminate)
@@ -1466,6 +1485,10 @@ namespace Internal.JitInterface
             uint result = 0;
 
             DefType type = (DefType)HandleToObject(cls);
+
+            // HACK
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                return 0;
 
             int pointerSize = PointerSize;
 

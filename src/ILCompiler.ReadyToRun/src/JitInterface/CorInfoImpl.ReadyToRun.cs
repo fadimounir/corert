@@ -1427,7 +1427,7 @@ namespace Internal.JitInterface
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD;
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hField;
 
-                runtimeLookup = fd.IsStatic && td.IsCanonicalSubtype(CanonicalFormKind.Specific);
+                runtimeLookup = fd.IsStatic && td.IsCanonicalSubtype(CanonicalFormKind.Any);
             }
             else
             {
@@ -1453,7 +1453,7 @@ namespace Internal.JitInterface
 
                 // IsSharedByGenericInstantiations would not work here. The runtime lookup is required
                 // even for standalone generic variables that show up as __Canon here.
-                runtimeLookup = td.IsCanonicalSubtype(CanonicalFormKind.Specific);
+                runtimeLookup = td.IsCanonicalSubtype(CanonicalFormKind.Any);
             }
 
             Debug.Assert(pResult.compileTimeHandle != null);

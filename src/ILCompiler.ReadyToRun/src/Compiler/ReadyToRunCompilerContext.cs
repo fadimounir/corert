@@ -33,7 +33,7 @@ namespace ILCompiler
             if (type.IsObject)
                 return _systemObjectFieldLayoutAlgorithm;
             else if (type == UniversalCanonType)
-                throw new NotImplementedException();
+                return UniversalCanonLayoutAlgorithm.Instance;
             else if (type.IsRuntimeDeterminedType)
                 throw new NotImplementedException();
             else if (_simdHelper.IsVectorOfT(type))

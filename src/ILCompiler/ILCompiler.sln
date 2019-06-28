@@ -31,7 +31,22 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Build.Tasks", "..\ILCompiler.Build.Tasks\src\ILCompiler.Build.Tasks.csproj", "{44DE7F7B-AD73-40EA-87CC-554F2F57C38A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.ReadyToRun", "..\ILCompiler.ReadyToRun\src\ILCompiler.ReadyToRun.csproj", "{5FB7EFC5-2E58-4A65-A611-C9B68CC6A78D}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.RyuJit", "..\ILCompiler.RyuJit\src\ILCompiler.RyuJit.csproj", "{69CB6CF1-9B6C-4617-A8B7-F0089CE474FB}"
+EndProject
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "ilc", "..\..\bin\Windows_NT.x64.Debug\tools\ilc.exe", "{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}"
+	ProjectSection(DebuggerProjectSystem) = preProject
+		PortSupplier = 00000000-0000-0000-0000-000000000000
+		Executable = D:\GIT\corert\bin\Windows_NT.x64.Debug\tools\ilc.exe
+		RemoteMachine = FADIM-WKS
+		StartingDirectory = D:\GIT\corert\bin\Windows_NT.x64.Debug\tools
+		Arguments = @e:\usg\usg.rsp
+		Environment = Default
+		LaunchingEngine = 3b476d35-a401-11d2-aad4-00c04f990171
+		UseLegacyDebugEngines = No
+		LaunchSQLEngine = No
+		AttachLaunchAction = No
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -434,6 +449,20 @@ Global
 		{69CB6CF1-9B6C-4617-A8B7-F0089CE474FB}.Release|x64.Build.0 = Release|x64
 		{69CB6CF1-9B6C-4617-A8B7-F0089CE474FB}.Release|x86.ActiveCfg = Release|x86
 		{69CB6CF1-9B6C-4617-A8B7-F0089CE474FB}.Release|x86.Build.0 = Release|x86
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Debug|Any CPU.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Debug|arm.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Debug|arm64.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Debug|armel.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Debug|wasm.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Debug|x64.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Debug|x86.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Release|Any CPU.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Release|arm.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Release|arm64.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Release|armel.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Release|wasm.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Release|x64.ActiveCfg = Release|x64
+		{11E18B60-479A-40B0-AFF7-C0E3F1F919C7}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

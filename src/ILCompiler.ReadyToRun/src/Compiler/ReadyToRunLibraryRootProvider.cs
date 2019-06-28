@@ -38,6 +38,15 @@ namespace ILCompiler
                 {
                     RootMethods(type, "Library module method", rootProvider);
                 }
+                else
+                {
+                    TypeDesc[] typeArgs = new TypeDesc[type.Instantiation.Length];
+                    for (int i = 0; i < typeArgs.Length; i++)
+                        typeArgs[i] = type.Context.UniversalCanonType;
+
+                    TypeDesc usgType = type.Context.GetInstantiatedType((MetadataType)type, new Instantiation(typeArgs));
+                    RootMethods(usgType, "Library module method", rootProvider);
+                }
             }
         }
 
@@ -91,7 +100,7 @@ namespace ILCompiler
         {
             MetadataType defType = type as MetadataType;
 
-            if (defType != null)
+            if (defType != null && !type.IsCanonicalSubtype(CanonicalFormKind.Universal))
             {
                 defType.ComputeTypeContainsGCPointers();
             }
