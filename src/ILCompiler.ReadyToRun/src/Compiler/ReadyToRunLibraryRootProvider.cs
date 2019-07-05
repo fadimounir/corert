@@ -40,6 +40,20 @@ namespace ILCompiler
                 }
                 else
                 {
+                    bool hasConstraints = false;
+                    foreach (GenericParameterDesc genParam in type.Instantiation)
+                    {
+                        if (genParam.Constraints != GenericConstraints.None)
+                        {
+                            hasConstraints = true;
+                            break;
+                        }
+                    }
+
+                    // TODO: Support USG compilations for generics with constraints.
+                    if (hasConstraints)
+                        continue;
+
                     TypeDesc[] typeArgs = new TypeDesc[type.Instantiation.Length];
                     for (int i = 0; i < typeArgs.Length; i++)
                         typeArgs[i] = type.Context.UniversalCanonType;

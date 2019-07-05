@@ -1488,7 +1488,10 @@ namespace Internal.JitInterface
 
             // HACK
             if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            {
+                gcPtrs[0] = (byte)CorInfoGCType.TYPE_GC_BYREF;
                 return 0;
+            }
 
             int pointerSize = PointerSize;
 
