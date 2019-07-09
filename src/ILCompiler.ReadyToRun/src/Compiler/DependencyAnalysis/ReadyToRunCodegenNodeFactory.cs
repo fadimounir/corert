@@ -246,7 +246,8 @@ namespace ILCompiler.DependencyAnalysis
             MethodWithToken method,
             bool isUnboxingStub,
             bool isInstantiatingStub,
-            SignatureContext signatureContext)
+            SignatureContext signatureContext,
+            ReadyToRunConverterKind fixupConventionConverterKind = ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid)
         {
             Dictionary<TypeAndMethod, MethodFixupSignature> perFixupKindMap;
             if (!_methodSignatures.TryGetValue(fixupKind, out perFixupKindMap))
@@ -255,11 +256,11 @@ namespace ILCompiler.DependencyAnalysis
                 _methodSignatures.Add(fixupKind, perFixupKindMap);
             }
 
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, fixupConventionConverterKind);
             MethodFixupSignature signature;
             if (!perFixupKindMap.TryGetValue(key, out signature))
             {
-                signature = new MethodFixupSignature(fixupKind, method, signatureContext, isUnboxingStub, isInstantiatingStub);
+                signature = new MethodFixupSignature(fixupKind, method, signatureContext, isUnboxingStub, isInstantiatingStub, fixupConventionConverterKind);
                 perFixupKindMap.Add(key, signature);
             }
             return signature;
@@ -519,12 +520,15 @@ namespace ILCompiler.DependencyAnalysis
             return sectionStartNode;
         }
 
-        private Dictionary<MethodWithToken, ISymbolNode> _dynamicHelperCellCache = new Dictionary<MethodWithToken, ISymbolNode>();
+        // TODO: TEMP: Refactor tuple into a new data structure type
+        private Dictionary<Tuple<MethodWithToken, ReadyToRunConverterKind>, ISymbolNode> _dynamicHelperCellCache = new Dictionary<Tuple<MethodWithToken, ReadyToRunConverterKind>, ISymbolNode>();
 
-        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, bool isInstantiatingStub, SignatureContext signatureContext)
+        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, bool isInstantiatingStub, SignatureContext signatureContext, ReadyToRunConverterKind converterKind)
         {
+            var key = new Tuple<MethodWithToken, ReadyToRunConverterKind>(methodWithToken, converterKind);
+
             ISymbolNode result;
-            if (!_dynamicHelperCellCache.TryGetValue(methodWithToken, out result))
+            if (!_dynamicHelperCellCache.TryGetValue(key, out result))
             {
                 result = new DelayLoadHelperMethodImport(
                     this,
@@ -538,9 +542,10 @@ namespace ILCompiler.DependencyAnalysis
                         methodWithToken,
                         signatureContext: signatureContext,
                         isUnboxingStub: false,
-                        isInstantiatingStub: isInstantiatingStub),
+                        isInstantiatingStub: isInstantiatingStub, 
+                        fixupConventionConverterKind: converterKind),
                     signatureContext);
-                _dynamicHelperCellCache.Add(methodWithToken, result);
+                _dynamicHelperCellCache.Add(key, result);
             }
             return result;
         }

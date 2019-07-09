@@ -84,43 +84,47 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         READYTORUN_FIXUP_MethodHandle = 0x11,
         READYTORUN_FIXUP_FieldHandle = 0x12,
 
-        READYTORUN_FIXUP_MethodEntry = 0x13, /* For calling a method entry point */
-        READYTORUN_FIXUP_MethodEntry_DefToken = 0x14, /* Smaller version of MethodEntry - method is def token */
-        READYTORUN_FIXUP_MethodEntry_RefToken = 0x15, /* Smaller version of MethodEntry - method is ref token */
+        READYTORUN_FIXUP_MethodEntry = 0x13,                /* For calling a method entry point */
+        READYTORUN_FIXUP_MethodEntry_DefToken = 0x14,       /* Smaller version of MethodEntry - method is def token */
+        READYTORUN_FIXUP_MethodEntry_RefToken = 0x15,       /* Smaller version of MethodEntry - method is ref token */
 
-        READYTORUN_FIXUP_VirtualEntry = 0x16, /* For invoking a virtual method */
-        READYTORUN_FIXUP_VirtualEntry_DefToken = 0x17, /* Smaller version of VirtualEntry - method is def token */
-        READYTORUN_FIXUP_VirtualEntry_RefToken = 0x18, /* Smaller version of VirtualEntry - method is ref token */
-        READYTORUN_FIXUP_VirtualEntry_Slot = 0x19, /* Smaller version of VirtualEntry - type & slot */
+        READYTORUN_FIXUP_VirtualEntry = 0x16,               /* For invoking a virtual method */
+        READYTORUN_FIXUP_VirtualEntry_DefToken = 0x17,      /* Smaller version of VirtualEntry - method is def token */
+        READYTORUN_FIXUP_VirtualEntry_RefToken = 0x18,      /* Smaller version of VirtualEntry - method is ref token */
+        READYTORUN_FIXUP_VirtualEntry_Slot = 0x19,          /* Smaller version of VirtualEntry - type & slot */
 
-        READYTORUN_FIXUP_Helper = 0x1A, /* Helper */
-        READYTORUN_FIXUP_StringHandle = 0x1B, /* String handle */
+        READYTORUN_FIXUP_Helper = 0x1A,                     /* Helper */
+        READYTORUN_FIXUP_StringHandle = 0x1B,               /* String handle */
 
-        READYTORUN_FIXUP_NewObject = 0x1C, /* Dynamically created new helper */
+        READYTORUN_FIXUP_NewObject = 0x1C,                  /* Dynamically created new helper */
         READYTORUN_FIXUP_NewArray = 0x1D,
 
-        READYTORUN_FIXUP_IsInstanceOf = 0x1E, /* Dynamically created casting helper */
+        READYTORUN_FIXUP_IsInstanceOf = 0x1E,               /* Dynamically created casting helper */
         READYTORUN_FIXUP_ChkCast = 0x1F,
 
-        READYTORUN_FIXUP_FieldAddress = 0x20, /* For accessing a cross-module static fields */
-        READYTORUN_FIXUP_CctorTrigger = 0x21, /* Static constructor trigger */
+        READYTORUN_FIXUP_FieldAddress = 0x20,               /* For accessing a cross-module static fields */
+        READYTORUN_FIXUP_CctorTrigger = 0x21,               /* Static constructor trigger */
 
-        READYTORUN_FIXUP_StaticBaseNonGC = 0x22, /* Dynamically created static base helpers */
+        READYTORUN_FIXUP_StaticBaseNonGC = 0x22,            /* Dynamically created static base helpers */
         READYTORUN_FIXUP_StaticBaseGC = 0x23,
         READYTORUN_FIXUP_ThreadStaticBaseNonGC = 0x24,
         READYTORUN_FIXUP_ThreadStaticBaseGC = 0x25,
 
-        READYTORUN_FIXUP_FieldBaseOffset = 0x26, /* Field base offset */
-        READYTORUN_FIXUP_FieldOffset = 0x27, /* Field offset */
+        READYTORUN_FIXUP_FieldBaseOffset = 0x26,            /* Field base offset */
+        READYTORUN_FIXUP_FieldOffset = 0x27,                /* Field offset */
 
         READYTORUN_FIXUP_TypeDictionary = 0x28,
         READYTORUN_FIXUP_MethodDictionary = 0x29,
 
-        READYTORUN_FIXUP_Check_TypeLayout = 0x2A, /* size, alignment, HFA, reference map */
+        READYTORUN_FIXUP_Check_TypeLayout = 0x2A,           /* size, alignment, HFA, reference map */
         READYTORUN_FIXUP_Check_FieldOffset = 0x2B,
 
-        READYTORUN_FIXUP_DelegateCtor = 0x2C, /* optimized delegate ctor */
+        READYTORUN_FIXUP_DelegateCtor = 0x2C,               /* optimized delegate ctor */
         READYTORUN_FIXUP_DeclaringTypeHandle = 0x2D,
+
+        READYTORUN_FIXUP_PinvokeTarget = 0x2E,              /* For calling a pinvoke method ptr  */
+
+        READYTORUN_FIXUP_LoadConverterThunk = 0x2F,         /* For converting to and from universal generics convention */
 
         READYTORUN_FIXUP_ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
@@ -267,6 +271,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         // JIT32 x86-specific exception handling
         READYTORUN_HELPER_EndCatch = 0x110,
+    }
+
+    public enum ReadyToRunConverterKind
+    {
+        READYTORUN_CONVERTERKIND_Invalid = 0,
+        // READYTORUN_CONVERTERKIND_StandardToStandardInstantiating,
+        // READYTORUN_CONVERTERKIND_StandardToGenericInstantiating,
+        // READYTORUN_CONVERTERKIND_StandardToGenericInstantiatingIfNotHasThis,
+        READYTORUN_CONVERTERKIND_StandardToGeneric,
+        // READYTORUN_CONVERTERKIND_StandardToGenericPassthruInstantiating,
+        // READYTORUN_CONVERTERKIND_StandardToGenericPassthruInstantiatingIfNotHasThis,
+        READYTORUN_CONVERTERKIND_GenericToStandard,
+        // READYTORUN_CONVERTERKIND_StandardUnboxing,
+        // READYTORUN_CONVERTERKIND_StandardUnboxingAndInstantiatingGeneric,
+        // READYTORUN_CONVERTERKIND_GenericToStandardWithTargetPointerArg,
+        // READYTORUN_CONVERTERKIND_GenericToStandardWithTargetPointerArgAndParamArg,
+        // READYTORUN_CONVERTERKIND_GenericToStandardWithTargetPointerArgAndMaybeParamArg,
     }
 
     public enum CorElementType : byte

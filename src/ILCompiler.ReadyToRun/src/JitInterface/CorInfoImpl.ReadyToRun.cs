@@ -967,6 +967,8 @@ namespace Internal.JitInterface
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {
                 directCall = true;
+                if (targetMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
+                    forceUseRuntimeLookup = true;
             }
             else
             if (targetMethod.Signature.IsStatic)
@@ -1055,18 +1057,32 @@ namespace Internal.JitInterface
                 //    (c) constraint calls that require runtime context lookup are never resolved 
                 //        to underlying shared generic code
 
+                bool unresolvedLdVirtFtn = 
+                    (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 &&
+                    (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 &&
+                    !resolvedCallVirt;
+
                 if (((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
                     && entityFromContext(pResolvedToken.tokenContext) is MethodDesc methodDesc && methodDesc.IsSharedByGenericInstantiations)
                 {
-                    // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                    if (unresolvedLdVirtFtn)
+                    {
+                        // Compensate for always treating delegates as direct calls above.
+                        // Dictionary lookup is computed in embedGenericHandle as part of the LDVIRTFTN code sequence
+                        pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                    }
+                    else
+                    {
+                        // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
+                        pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
 
-                    // For reference types, the constrained type does not affect method resolution
-                    DictionaryEntryKind entryKind = (constrainedType != null && constrainedType.IsValueType
-                        ? DictionaryEntryKind.ConstrainedMethodEntrySlot
-                        : DictionaryEntryKind.MethodEntrySlot);
+                        // For reference types, the constrained type does not affect method resolution
+                        DictionaryEntryKind entryKind = (constrainedType != null && constrainedType.IsValueType
+                            ? DictionaryEntryKind.ConstrainedMethodEntrySlot
+                            : DictionaryEntryKind.MethodEntrySlot);
 
-                    ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, targetMethod, ref pResult->codePointerOrStubLookup);
+                        ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, targetMethod, ref pResult->codePointerOrStubLookup);
+                    }
                 }
                 else
                 {
@@ -1079,9 +1095,7 @@ namespace Internal.JitInterface
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
 
                     // Compensate for always treating delegates as direct calls above
-                    if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 &&
-                        (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 &&
-                        !resolvedCallVirt)
+                    if (unresolvedLdVirtFtn)
                     {
                         pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
                     }
@@ -1185,6 +1199,9 @@ namespace Internal.JitInterface
                 out callerModule,
                 out useInstantiatingStub);
 
+            // TODO: TEMP: Delete this local (used for debugging)
+            var methodBeingCalled = HandleToObject(pResolvedToken.hMethod);
+
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
                 // READYTORUN: FUTURE: Optionally create boxing stub at runtime
@@ -1210,13 +1227,29 @@ namespace Internal.JitInterface
                             return;
                         }
 
-                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
-                                GetSignatureContext(),
-                                isUnboxingStub: false,
-                                _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
+                        if (MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal))
+                        {
+                            targetMethod = targetMethod.GetTypicalMethodDefinition();
+
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                                _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                                    new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                    GetSignatureContext(),
+                                    isUnboxingStub: false,
+                                    _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString(),
+                                    ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_GenericToStandard));
                         }
+                        else
+                        {
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                                _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                                    new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                    GetSignatureContext(),
+                                    isUnboxingStub: false,
+                                    _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString(),
+                                    ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid));
+                        }
+                    }
                     break;
 
 
@@ -1259,12 +1292,16 @@ namespace Internal.JitInterface
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:
                     if (!pResult->exactContextNeedsRuntimeLookup)
                     {
+                        // TODO: Needs more work. Add assert to catch these cases
+                        Debug.Assert(!MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal));
+
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
                                 useInstantiatingStub,
-                                GetSignatureContext()));
+                                GetSignatureContext(),
+                                ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
                     }

@@ -22,18 +22,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly bool _isInstantiatingStub;
 
+        private readonly ReadyToRunConverterKind _fixupConventionConverterKind;
+
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind, 
             MethodWithToken method, 
             SignatureContext signatureContext,
             bool isUnboxingStub,
-            bool isInstantiatingStub)
+            bool isInstantiatingStub,
+            ReadyToRunConverterKind fixupConventionConverterKind)
         {
             _fixupKind = fixupKind;
             _method = method;
             _signatureContext = signatureContext;
             _isUnboxingStub = isUnboxingStub;
             _isInstantiatingStub = isInstantiatingStub;
+            _fixupConventionConverterKind = fixupConventionConverterKind;
         }
 
         public MethodDesc Method => _method.Method;
@@ -51,8 +55,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, _method.Token.Module, _signatureContext);
-            dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
+            if (_fixupConventionConverterKind != ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid)
+            {
+                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_LoadConverterThunk, _method.Token.Module, _signatureContext);
+                dataBuilder.EmitByte((byte)_fixupConventionConverterKind);
+                dataBuilder.EmitByte((byte)_fixupKind);
+                dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
+            }
+            else
+            {
+                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, _method.Token.Module, _signatureContext);
+                dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
+            }
 
             return dataBuilder.ToObjectData();
         }
@@ -69,6 +83,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_isInstantiatingStub)
             {
                 sb.Append(" [INST]");
+            }
+            if (_fixupConventionConverterKind != ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid)
+            {
+                sb.Append(String.Format(" [{0}]", Enum.GetName(typeof(ReadyToRunConverterKind), _fixupConventionConverterKind)));
             }
             sb.Append(": ");
             _method.AppendMangledName(nameMangler, sb);

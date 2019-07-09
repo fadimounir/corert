@@ -673,11 +673,15 @@ namespace ILCompiler.DependencyAnalysis
             return ExternSymbol(helperId);
         }
 
-        private readonly Dictionary<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<MethodAndCallSite, ISymbolNode>();
+        // TODO: Refactor tuple into a new data structure type
+        private readonly Dictionary<Tuple<MethodAndCallSite, ReadyToRunConverterKind>, ISymbolNode> _interfaceDispatchCells = new Dictionary<Tuple<MethodAndCallSite, ReadyToRunConverterKind>, ISymbolNode>();
 
-        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, SignatureContext signatureContext, bool isUnboxingStub, string callSite)
+        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, SignatureContext signatureContext, bool isUnboxingStub, string callSite, ReadyToRunConverterKind converterKind)
         {
-            MethodAndCallSite cellKey = new MethodAndCallSite(method, callSite);
+            var cellKey = new Tuple<MethodAndCallSite, ReadyToRunConverterKind>(
+                new MethodAndCallSite(method, callSite),
+                converterKind);
+
             if (!_interfaceDispatchCells.TryGetValue(cellKey, out ISymbolNode dispatchCell))
             {
                 dispatchCell = new DelayLoadHelperMethodImport(
@@ -689,7 +693,10 @@ namespace ILCompiler.DependencyAnalysis
                     useInstantiatingStub: false,
                     _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
                         method,
-                        isUnboxingStub, isInstantiatingStub: false, signatureContext),
+                        isUnboxingStub, 
+                        isInstantiatingStub: false, 
+                        signatureContext,
+                        converterKind),
                     signatureContext,
                     callSite);
 
