@@ -614,6 +614,10 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
+                case CorInfoHelpFunc.CORINFO_HELP_CALL_CONVERTER_THUNK:
+                    id = ReadyToRunHelper.ConventionConverter;
+                    break;
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
@@ -1156,6 +1160,8 @@ namespace Internal.JitInterface
 
             pResult->hMethod = ObjectToHandle(methodToDescribe);
 
+            pResult->callConverterKind = 0;
+
             // TODO: access checks
             pResult->accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
@@ -1288,8 +1294,22 @@ namespace Internal.JitInterface
 
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:
 
-                    if(MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal))
-                    { }
+                    if (MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal) && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+                    {
+                        if (pResult->exactContextNeedsRuntimeLookup)
+                        {
+                            // This is a callvirt site from universal generics code where the target requires a dictionary lookup. Virtual calls could end up in non-USG code, so we
+                            // need to convert from the universal generics convention to the standard one
+                            Debug.Assert(targetMethod.IsCanonicalMethod(CanonicalFormKind.Universal));
+                            pResult->callConverterKind = (uint)ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_GenericToStandard;
+                        }
+                        else
+                        {
+                            // If the method we're calling does not require a dictionary lookup, it has to be non-USG. In that case, the codegen can correctly pass the arguments
+                            // to the target method without the need for a converter, because the signature of the target method is known.
+                            Debug.Assert(!targetMethod.IsCanonicalMethod(CanonicalFormKind.Universal));
+                        }
+                    }
 
                     if (!pResult->exactContextNeedsRuntimeLookup)
                     {
@@ -1298,8 +1318,7 @@ namespace Internal.JitInterface
                             _compilation.NodeFactory.DynamicHelperCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
                                 useInstantiatingStub,
-                                GetSignatureContext(),
-                                ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid));
+                                GetSignatureContext()));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
                     }

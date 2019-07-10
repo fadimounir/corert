@@ -520,15 +520,12 @@ namespace ILCompiler.DependencyAnalysis
             return sectionStartNode;
         }
 
-        // TODO: TEMP: Refactor tuple into a new data structure type
-        private Dictionary<Tuple<MethodWithToken, ReadyToRunConverterKind>, ISymbolNode> _dynamicHelperCellCache = new Dictionary<Tuple<MethodWithToken, ReadyToRunConverterKind>, ISymbolNode>();
+        private Dictionary<MethodWithToken, ISymbolNode> _dynamicHelperCellCache = new Dictionary<MethodWithToken, ISymbolNode>();
 
-        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, bool isInstantiatingStub, SignatureContext signatureContext, ReadyToRunConverterKind converterKind)
+        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, bool isInstantiatingStub, SignatureContext signatureContext)
         {
-            var key = new Tuple<MethodWithToken, ReadyToRunConverterKind>(methodWithToken, converterKind);
-
             ISymbolNode result;
-            if (!_dynamicHelperCellCache.TryGetValue(key, out result))
+            if (!_dynamicHelperCellCache.TryGetValue(methodWithToken, out result))
             {
                 result = new DelayLoadHelperMethodImport(
                     this,
@@ -542,10 +539,9 @@ namespace ILCompiler.DependencyAnalysis
                         methodWithToken,
                         signatureContext: signatureContext,
                         isUnboxingStub: false,
-                        isInstantiatingStub: isInstantiatingStub, 
-                        fixupConventionConverterKind: converterKind),
+                        isInstantiatingStub: isInstantiatingStub),
                     signatureContext);
-                _dynamicHelperCellCache.Add(key, result);
+                _dynamicHelperCellCache.Add(methodWithToken, result);
             }
             return result;
         }

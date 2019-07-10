@@ -1099,6 +1099,7 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
+        public uint callConverterKind;
 
         public uint _secureDelegateInvoke;
         public bool secureDelegateInvoke { get { return _secureDelegateInvoke != 0; } set { _secureDelegateInvoke = value ? (byte)1 : (byte)0; } }

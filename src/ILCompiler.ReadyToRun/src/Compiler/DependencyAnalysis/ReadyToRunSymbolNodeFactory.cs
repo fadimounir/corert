@@ -653,6 +653,10 @@ namespace ILCompiler.DependencyAnalysis
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_EndCatch;
                     break;
 
+                case ILCompiler.ReadyToRunHelper.ConventionConverter:
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ConventionConverter;
+                    break;
+
                 case ILCompiler.ReadyToRunHelper.PInvokeBegin:
                 case ILCompiler.ReadyToRunHelper.PInvokeEnd:
                 case ILCompiler.ReadyToRunHelper.ReversePInvokeEnter:

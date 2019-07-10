@@ -251,6 +251,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         READYTORUN_HELPER_PersonalityRoutine = 0xF0,
         READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
 
+        // Synchronized methods
+        READYTORUN_HELPER_MonitorEnter = 0xF8,
+        READYTORUN_HELPER_MonitorExit = 0xF9,
+
+        // Calling convention converter stubs
+        READYTORUN_HELPER_ConventionConverter = 0x113,
+
         //
         // Deprecated/legacy
         //

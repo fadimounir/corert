@@ -1274,15 +1274,6 @@ namespace Internal.JitInterface
             if (type.IsArray || type.IsString)
                 result |= CorInfoFlag.CORINFO_FLG_VAROBJSIZE;
 
-            // HACK - USG
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
-            {
-                return (uint)(
-                    CorInfoFlag.CORINFO_FLG_SHAREDINST | 
-                    CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR | 
-                    CorInfoFlag.CORINFO_FLG_VALUECLASS);
-            }
-
             if (type.IsValueType)
             {
                 result |= CorInfoFlag.CORINFO_FLG_VALUECLASS;
