@@ -342,3 +342,4 @@ FUNCTIONS
     void getModuleNativeEntryPointRange(void** pStart, void** pEnd)
     DWORD getExpectedTargetArchitecture()
     DWORD getJitFlags(CORJIT_FLAGS* flags, DWORD  sizeInBytes)
+    DWORD getCallConverterKind(void* pResolvedToken)

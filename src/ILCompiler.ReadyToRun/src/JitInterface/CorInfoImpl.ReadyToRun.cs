@@ -1199,9 +1199,6 @@ namespace Internal.JitInterface
                 out callerModule,
                 out useInstantiatingStub);
 
-            // TODO: TEMP: Delete this local (used for debugging)
-            var methodBeingCalled = HandleToObject(pResolvedToken.hMethod);
-
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
                 // READYTORUN: FUTURE: Optionally create boxing stub at runtime
@@ -1290,11 +1287,12 @@ namespace Internal.JitInterface
                     break;
 
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:
+
+                    if(MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal))
+                    { }
+
                     if (!pResult->exactContextNeedsRuntimeLookup)
                     {
-                        // TODO: Needs more work. Add assert to catch these cases
-                        Debug.Assert(!MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal));
-
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
@@ -1340,6 +1338,19 @@ namespace Internal.JitInterface
                     }
                 }
             }
+        }
+
+        private uint getCallConverterKind(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
+        {
+            MethodDesc method = HandleToObject(pResolvedToken.hMethod);
+
+            if (MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal))
+            {
+                if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                    return (uint)ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_GenericToStandard;
+            }
+
+            return 0;
         }
 
         private void ComputeRuntimeLookupForSharedGenericToken(
