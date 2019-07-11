@@ -1230,28 +1230,25 @@ namespace Internal.JitInterface
                             return;
                         }
 
-                        if (MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal))
-                        {
-                            targetMethod = targetMethod.GetTypicalMethodDefinition();
+                        ReadyToRunConverterKind converterKindNeeded = ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid;
 
-                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                                _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                    new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
-                                    GetSignatureContext(),
-                                    isUnboxingStub: false,
-                                    _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString(),
-                                    ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_GenericToStandard));
-                        }
-                        else
+                        if (MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal) && targetMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
                         {
-                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                                _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                    new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
-                                    GetSignatureContext(),
-                                    isUnboxingStub: false,
-                                    _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString(),
-                                    ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid));
+                            // This is a callvirt callsite in a universal generic method, where the target can either end up in USG or non-USG code. Given that
+                            // we don't know the target before hand, we need to convert to the standard convention.
+                            converterKindNeeded = ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_GenericToStandard;
+
+                            // Typical definition signatures are used since there is no __UniversalCanon type at runtime
+                            targetMethod = targetMethod.GetTypicalMethodDefinition();
                         }
+
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                GetSignatureContext(),
+                                isUnboxingStub: false,
+                                _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString(),
+                                converterKindNeeded));
                     }
                     break;
 
@@ -1277,13 +1274,29 @@ namespace Internal.JitInterface
                             nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                         }
 
-                        // READYTORUN: FUTURE: Direct calls if possible
-                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.MethodEntrypoint(
-                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken), constrainedType),
-                                isUnboxingStub,
-                                isInstantiatingStub: useInstantiatingStub,
-                                GetSignatureContext()));
+                        if ((pResult->methodFlags & (uint)CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE) != 0 &&
+                            MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal) &&
+                            targetMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
+                        {
+                            // Delegate invoke from universal generic code, where the delegate is also a universal generic.
+                            // In these cases, the target of the delegate is computed by a dictionary lookup, and will always be the entry point
+                            // of a non universal generic MethodDesc. For this reason, we need to convert from the generic to the standard convention here
+
+                            pResult->callConverterKind = (uint)ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_GenericToStandard;
+
+                            // Typical definition signatures are used since there is no __UniversalCanon type at runtime
+                            targetMethod = targetMethod.GetTypicalMethodDefinition();
+                        }
+                        else
+                        {
+                            // READYTORUN: FUTURE: Direct calls if possible
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                                _compilation.NodeFactory.MethodEntrypoint(
+                                    new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken), constrainedType),
+                                    isUnboxingStub,
+                                    isInstantiatingStub: useInstantiatingStub,
+                                    GetSignatureContext()));
+                        }
                     }
                     break;
 
