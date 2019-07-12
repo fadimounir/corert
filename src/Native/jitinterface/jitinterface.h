@@ -189,7 +189,6 @@ struct JitInterfaceCallbacks
     void (* getModuleNativeEntryPointRange)(void * thisHandle, CorInfoException** ppException, void** pStart, void** pEnd);
     unsigned int (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoException** ppException);
     unsigned int (* getJitFlags)(void * thisHandle, CorInfoException** ppException, void* flags, unsigned int sizeInBytes);
-    unsigned int (* getCallConverterKind)(void* thisHandle, CorInfoException** ppException, void* pResolvedToken);
 
 };
 
@@ -1730,12 +1729,4 @@ public:
         return _ret;
     }
 
-    virtual unsigned int getCallConverterKind(void* pResolvedToken)
-    {
-        CorInfoException* pException = nullptr;
-        unsigned int _ret = _callbacks->getCallConverterKind(_thisHandle, &pException, pResolvedToken);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
 };

@@ -1372,19 +1372,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private uint getCallConverterKind(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
-        {
-            MethodDesc method = HandleToObject(pResolvedToken.hMethod);
-
-            if (MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Universal))
-            {
-                if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
-                    return (uint)ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_GenericToStandard;
-            }
-
-            return 0;
-        }
-
         private void ComputeRuntimeLookupForSharedGenericToken(
             DictionaryEntryKind entryKind,
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,

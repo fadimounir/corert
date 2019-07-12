@@ -455,8 +455,6 @@ public:
         DWORD        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
                                           version number for the CORJIT_FLAGS value. */
         ) = 0;
-        
-    virtual DWORD getCallConverterKind(void* pResolvedToken) = 0;
 };
 
 /**********************************************************************************/
