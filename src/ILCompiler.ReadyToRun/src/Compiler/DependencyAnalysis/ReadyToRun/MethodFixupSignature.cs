@@ -12,32 +12,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodFixupSignature : Signature
     {
-        private readonly ReadyToRunFixupKind _fixupKind;
+        protected readonly ReadyToRunFixupKind _fixupKind;
 
-        private readonly MethodWithToken _method;
+        protected readonly MethodWithToken _method;
 
-        private readonly SignatureContext _signatureContext;
+        protected readonly SignatureContext _signatureContext;
 
-        private readonly bool _isUnboxingStub;
+        protected readonly bool _isUnboxingStub;
 
-        private readonly bool _isInstantiatingStub;
-
-        private readonly ReadyToRunConverterKind _fixupConventionConverterKind;
+        protected readonly bool _isInstantiatingStub;
 
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind, 
             MethodWithToken method, 
             SignatureContext signatureContext,
             bool isUnboxingStub,
-            bool isInstantiatingStub,
-            ReadyToRunConverterKind fixupConventionConverterKind)
+            bool isInstantiatingStub)
         {
             _fixupKind = fixupKind;
             _method = method;
             _signatureContext = signatureContext;
             _isUnboxingStub = isUnboxingStub;
             _isInstantiatingStub = isInstantiatingStub;
-            _fixupConventionConverterKind = fixupConventionConverterKind;
         }
 
         public MethodDesc Method => _method.Method;
@@ -55,25 +51,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
-            if (_fixupConventionConverterKind != ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid)
-            {
-                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_LoadConverterThunk, _method.Token.Module, _signatureContext);
-                dataBuilder.EmitByte((byte)_fixupConventionConverterKind);
-                dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
-            }
-            else
-            {
-                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, _method.Token.Module, _signatureContext);
-                dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
-            }
+
+            // Emit typicaly definitions instead of universal canonical ones to avoid having to have type __UniversalCanon in the runtime
+            MethodWithToken methodSignatureToEmit = _method;
+            if (_method.Method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                methodSignatureToEmit = new MethodWithToken(_method.Method.GetTypicalMethodDefinition(), _method.Token, _method.ConstrainedType);
+
+            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, _method.Token.Module, _signatureContext);
+            dataBuilder.EmitMethodSignature(methodSignatureToEmit, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
 
             return dataBuilder.ToObjectData();
         }
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        protected void AppendMethodSignatureMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"MethodFixupSignature(");
             sb.Append(_fixupKind.ToString());
             if (_isUnboxingStub)
@@ -84,12 +75,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 sb.Append(" [INST]");
             }
-            if (_fixupConventionConverterKind != ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid)
-            {
-                sb.Append(String.Format(" [{0}]", Enum.GetName(typeof(ReadyToRunConverterKind), _fixupConventionConverterKind)));
-            }
             sb.Append(": ");
             _method.AppendMangledName(nameMangler, sb);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            AppendMethodSignatureMangledName(nameMangler, sb);
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

@@ -179,6 +179,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitTypeSignature(TypeDesc typeDesc, SignatureContext context)
         {
+            if (typeDesc.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+            {
+                throw new NotSupportedException("Emitting universal canonical signatures");
+            }
+
             if (typeDesc is RuntimeDeterminedType runtimeDeterminedType)
             {
                 switch (runtimeDeterminedType.RuntimeDeterminedDetailsType.Kind)
@@ -309,17 +314,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
                     {
-                        if (typeDesc.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
-                        {
-                            EmitElementType(CorElementType.ELEMENT_TYPE_UNIVERSALCANON_ZAPSIG);
-                        }
-                        else
-                        {
-                            ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
-                            EmitModuleOverride(token.Module, context);
-                            EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
-                            EmitToken(token.Token);
-                        }
+                        ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
+                        EmitModuleOverride(token.Module, context);
+                        EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
+                        EmitToken(token.Token);
                         return;
                     }
 

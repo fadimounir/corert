@@ -17,16 +17,13 @@ namespace ILCompiler.DependencyAnalysis
         public readonly MethodWithToken Method;
         public readonly bool IsUnboxingStub;
         public readonly bool IsInstantiatingStub;
-        // TODO: Refactor this out of this struct
-        public readonly ReadyToRunConverterKind FixupConventionConverterKind;
 
-        public TypeAndMethod(TypeDesc type, MethodWithToken method, bool isUnboxingStub, bool isInstantiatingStub, ReadyToRunConverterKind fixupConventionConverterKind = ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid)
+        public TypeAndMethod(TypeDesc type, MethodWithToken method, bool isUnboxingStub, bool isInstantiatingStub)
         {
             Type = type;
             Method = method;
             IsUnboxingStub = isUnboxingStub;
             IsInstantiatingStub = isInstantiatingStub;
-            FixupConventionConverterKind = fixupConventionConverterKind;
         }
 
         public bool Equals(TypeAndMethod other)
@@ -34,8 +31,7 @@ namespace ILCompiler.DependencyAnalysis
             return Type == other.Type &&
                    Method.Equals(other.Method) &&
                    IsUnboxingStub == other.IsUnboxingStub &&
-                   IsInstantiatingStub == other.IsInstantiatingStub &&
-                   FixupConventionConverterKind == other.FixupConventionConverterKind;
+                   IsInstantiatingStub == other.IsInstantiatingStub;
         }
 
         public override bool Equals(object obj)
@@ -45,9 +41,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int GetHashCode()
         {
-            return (Type?.GetHashCode() ?? 0) ^
-                unchecked(Method.GetHashCode() * 31) ^
-                unchecked(FixupConventionConverterKind.GetHashCode() * 55733) ^
+            return (Type?.GetHashCode() ?? 0) ^ 
+                unchecked(Method.GetHashCode() * 31) ^ 
                 (IsUnboxingStub ? -0x80000000 : 0) ^ 
                 (IsInstantiatingStub ? 0x40000000 : 0);
         }

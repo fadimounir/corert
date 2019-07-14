@@ -1238,8 +1238,8 @@ namespace Internal.JitInterface
                             // we don't know the target before hand, we need to convert to the standard convention.
                             converterKindNeeded = ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_GenericToStandard;
 
-                            // Typical definition signatures are used since there is no __UniversalCanon type at runtime
-                            targetMethod = targetMethod.GetTypicalMethodDefinition();
+                            // Use the method signature that contains type variables. The runtime will use the instantiated signature.
+                            targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         }
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(

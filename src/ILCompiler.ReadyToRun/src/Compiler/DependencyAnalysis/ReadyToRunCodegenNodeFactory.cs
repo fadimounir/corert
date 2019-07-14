@@ -16,6 +16,8 @@ using Internal.TypeSystem;
 namespace ILCompiler.DependencyAnalysis
 {
     using ReadyToRunHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper;
+    using PerTypeAndMethodMethodSignature = Dictionary<TypeAndMethod, MethodFixupSignature>;
+    using PerFixupKindMethodSignatureMap = Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>>;
 
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
@@ -238,8 +240,8 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        private readonly Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>> _methodSignatures =
-            new Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>>();
+        private readonly Dictionary<ReadyToRunConverterKind, PerFixupKindMethodSignatureMap> _methodSignatures =
+            new Dictionary<ReadyToRunConverterKind, PerFixupKindMethodSignatureMap>();
 
         public MethodFixupSignature MethodSignature(
             ReadyToRunFixupKind fixupKind,
@@ -247,21 +249,31 @@ namespace ILCompiler.DependencyAnalysis
             bool isUnboxingStub,
             bool isInstantiatingStub,
             SignatureContext signatureContext,
-            ReadyToRunConverterKind fixupConventionConverterKind = ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid)
+            ReadyToRunConverterKind wrappingCallConverterKind = ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid)
         {
-            Dictionary<TypeAndMethod, MethodFixupSignature> perFixupKindMap;
-            if (!_methodSignatures.TryGetValue(fixupKind, out perFixupKindMap))
+            PerFixupKindMethodSignatureMap perFixupKindMap;
+            if (!_methodSignatures.TryGetValue(wrappingCallConverterKind, out perFixupKindMap))
             {
-                perFixupKindMap = new Dictionary<TypeAndMethod, MethodFixupSignature>();
-                _methodSignatures.Add(fixupKind, perFixupKindMap);
+                perFixupKindMap = new PerFixupKindMethodSignatureMap();
+                _methodSignatures.Add(wrappingCallConverterKind, perFixupKindMap);
             }
 
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, fixupConventionConverterKind);
-            MethodFixupSignature signature;
-            if (!perFixupKindMap.TryGetValue(key, out signature))
+            PerTypeAndMethodMethodSignature perTypeAndMethodMap;
+            if (!perFixupKindMap.TryGetValue(fixupKind, out perTypeAndMethodMap))
             {
-                signature = new MethodFixupSignature(fixupKind, method, signatureContext, isUnboxingStub, isInstantiatingStub, fixupConventionConverterKind);
-                perFixupKindMap.Add(key, signature);
+                perTypeAndMethodMap = new PerTypeAndMethodMethodSignature();
+                perFixupKindMap.Add(fixupKind, perTypeAndMethodMap);
+            }
+
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
+            MethodFixupSignature signature;
+            if (!perTypeAndMethodMap.TryGetValue(key, out signature))
+            {
+                signature = wrappingCallConverterKind == ReadyToRunConverterKind.READYTORUN_CONVERTERKIND_Invalid ?
+                    new MethodFixupSignature(fixupKind, method, signatureContext, isUnboxingStub, isInstantiatingStub) :
+                    new CallConverterFixupSignature(fixupKind, method, signatureContext, isUnboxingStub, isInstantiatingStub, wrappingCallConverterKind);
+
+                perTypeAndMethodMap.Add(key, signature);
             }
             return signature;
         }

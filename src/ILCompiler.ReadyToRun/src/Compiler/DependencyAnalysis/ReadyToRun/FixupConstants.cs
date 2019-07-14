@@ -338,7 +338,5 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         ELEMENT_TYPE_HANDLE = 64,
         ELEMENT_TYPE_SENTINEL = 65,
         ELEMENT_TYPE_PINNED = 69,
-
-        ELEMENT_TYPE_UNIVERSALCANON_ZAPSIG = 70,     // zapsig encoding for [mscorlib]System.__UniversalCanon
     }
 }
